@@ -35,8 +35,8 @@ class RandomChoice(object):
 
     def extract_options(self, intent_message):
         extractedOptions = []
-        if intent_message.slots.options:
-            for option in intent_message.slots.options.all():
+        if intent_message.slots.option:
+            for option in intent_message.slots.option.all():
                 extractedOptions.append(option.value)
         return extractedOptions
         
