@@ -7,7 +7,6 @@ from hermes_python.ontology import *
 import io
 import socket
 import random
-from subprocess import call
 
 CONFIG_INI = "config.ini"
 
@@ -18,11 +17,7 @@ MQTT_IP_ADDR = "localhost"
 MQTT_PORT = 1883
 MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
-success_tts = ['Got it', 'Sure', 'Done', 'Ok']
-fail_tts = ["Sorry, I can't do that", "Sorry, that doesn't work"]
-no_slot_tts = ["What do you mean?", "Don't waste my time", "I can't do anything with that", "Please stop bothering me", "No", "I'd rather not", "No, I don't think I will"]
-
-class ALSAVolume(object):
+class RandomChoice(object):
     """Class used to wrap action code with mqtt connection
         
         Please change the name refering to your application
@@ -37,42 +32,42 @@ class ALSAVolume(object):
 
         # start listening to MQTT
         self.start_blocking()
+
+    def extract_options(self, intent_message):
+        extractedOptions = []
+        if intent_message.slots.options:
+            for option in intent_message.slots.options.all():
+                print type(option.value)
+                extractedOptions.append(option.value)
+        return extractedOptions
         
     # --> Sub callback function, one per intent
-    def setVolumeCallback(self, hermes, intent_message):
+    def choiceCallback(self, hermes, intent_message):
         # terminate the session first if not continue
         #hermes.publish_end_session(intent_message.session_id, "")
 
         # action code goes here...
         print '[Received] intent: {}'.format(intent_message.intent.intent_name)
-        volumeSet = False
+
+        options = self.extract_options(intent_message)
+        hasadjective = False
 
         for (slot_value, slot) in intent_message.slots.items():
-            if slot_value == "Volume":
-                self.Volume = slot.first().value.encode("utf8")
-                volumeSet = True
-
-        if volumeSet:
-            try:
-                volume = int(self.Volume)
-                deviceName = self.config['secret']['device_name']
-                call(["amixer", "set", deviceName, str(volume)+"%"])
-            except ValueError:
-                pass
-            tts = random.choice(success_tts) + ", " + str(volume) + " percent"
-        else:
-            if(self.config['secret']['snarky_response']) == "y":
-                tts = random.choice(no_slot_tts)
-            else:
-                tts = random.choice(fail_tts)
+            if slot_value == "adjective":
+                self.adjective = slot.first().value.encode("utf8")
+                hasadjective = True
         
+        if(hasadjective):
+            tts = random.choice(options) + " is " + self.adjective
+        else:
+            tts = random.choice(options)
         hermes.publish_end_session(intent_message.session_id, tts)
 
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self,hermes, intent_message):
         coming_intent = intent_message.intent.intent_name
-        if coming_intent == 'thejonnyd:SetVolume':
-            self.setVolumeCallback(hermes, intent_message)
+        if coming_intent == 'thejonnyd:randomChoice':
+            self.choiceCallback(hermes, intent_message)
 
         # more callback and if condition goes here...
 
@@ -82,4 +77,4 @@ class ALSAVolume(object):
             h.subscribe_intents(self.master_intent_callback).start()
  
 if __name__ == "__main__":
-    ALSAVolume()
+    RandomChoice()
