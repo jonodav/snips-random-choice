@@ -37,7 +37,6 @@ class RandomChoice(object):
         extractedOptions = []
         if intent_message.slots.options:
             for option in intent_message.slots.options.all():
-                print type(option.value)
                 extractedOptions.append(option.value)
         return extractedOptions
         
@@ -49,6 +48,7 @@ class RandomChoice(object):
         # action code goes here...
         print '[Received] intent: {}'.format(intent_message.intent.intent_name)
 
+        options = ["I've failed you", "I don't understand"]
         options = self.extract_options(intent_message)
         hasadjective = False
 
