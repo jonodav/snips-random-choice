@@ -1,1 +1,1 @@
-### Snip snip
+### Snips random choice
